@@ -230,42 +230,6 @@ func (c *ApiController) Signup() {
 	c.ResponseOk(userId)
 }
 
-
-// CheckAccountExist
-// @Tag Login API
-// @Title CheckAccountExist
-// @Description sign up a new user
-// @Param   application     formData    string  true        "The username to sign up"
-// @Param   organization     formData    string  true        "The password"
-// @Param   username     formData    string  true        "The username to sign up"
-// @Param   email     formData    string  true        "The email"
-// @Param   phone     formData    string  true        "The phone"
-// @Success 200 {object} controllers.Response The Response object
-// @router /check-account [post]
-func (c *ApiController) CheckAccountExist() {
-
-	var form RequestForm
-	err := json.Unmarshal(c.Ctx.Input.RequestBody, &form)
-	if err != nil {
-		panic(err)
-	}
-
-	application := object.GetApplication(fmt.Sprintf("admin/%s", form.Application))
-	if !application.EnableSignUp {
-		c.ResponseError("The application does not allow to sign up new account")
-		return
-	}
-
-	organization := object.GetOrganization(fmt.Sprintf("%s/%s", "admin", form.Organization))
-	msg := object.CheckUserIfExist(application, organization, form.Username, form.Email, form.Phone)
-	if msg != "" {
-		c.ResponseError(msg)
-		return
-	}
-
-	c.ResponseOk("")
-}
-
 // Logout
 // @Title Logout
 // @Tag Login API
