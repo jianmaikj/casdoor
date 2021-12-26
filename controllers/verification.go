@@ -35,6 +35,34 @@ const (
 	MfaAuthVerification  = "mfaAuth"
 )
 
+// CheckCaptcha
+// @Title CheckCaptcha
+// @Tag Verification API
+// @router /check-captcha [post]
+func (c *ApiController) CheckCaptcha() {
+	checkType := c.Ctx.Request.Form.Get("checkType")
+	checkId := c.Ctx.Request.Form.Get("checkId")
+	checkKey := c.Ctx.Request.Form.Get("checkKey")
+
+	if len(checkType) == 0 || len(checkId) == 0 || len(checkKey) == 0 {
+		c.ResponseError("Missing parameter.")
+		return
+	}
+
+	isHuman := false
+	captchaProvider := object.GetDefaultHumanCheckProvider()
+	if captchaProvider == nil {
+		isHuman = object.VerifyCaptcha(checkId, checkKey)
+	}
+
+	if !isHuman {
+		c.ResponseError("Turing test failed.")
+		return
+	}
+	c.Data["json"] = Response{Status: "ok"}
+	c.ServeJSON()
+}
+
 // SendVerificationCode ...
 // @Title SendVerificationCode
 // @Tag Verification API
