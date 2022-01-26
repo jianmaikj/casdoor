@@ -34,6 +34,8 @@ type Claims struct {
 type UserShort struct {
 	Owner string `xorm:"varchar(100) notnull pk" json:"owner"`
 	Name  string `xorm:"varchar(100) notnull pk" json:"name"`
+	Id string `json:"id"`
+	Properties map[string]string `json:"properties"`
 }
 
 type UserWithoutThirdIdp struct {
@@ -144,6 +146,8 @@ func getShortUser(user *User) *UserShort {
 	res := &UserShort{
 		Owner: user.Owner,
 		Name:  user.Name,
+		Id: user.Id,
+		Properties: user.Properties,
 	}
 	return res
 }
