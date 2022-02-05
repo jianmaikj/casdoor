@@ -144,6 +144,7 @@ func (c *ApiController) HandleLoggedIn(application *object.Application, user *ob
 		}
 
 		resp = codeToResponse(code)
+		resp.Data2=user.Id//添加用户名
 
 		if application.EnableSigninSession || application.HasPromptPage() {
 			// The prompt page needs the user to be signed in
