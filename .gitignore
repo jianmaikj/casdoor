@@ -34,3 +34,6 @@ object/token_jwt_key.pem
 *.pem
 object/token_jwt_key.key
 object/token_jwt_key.pem
+conf/app.conf
+*.key
+*.pem
