@@ -62,7 +62,12 @@
     "lint:css": "stylelint src/**/*.{css,less} --fix"
   },
   "eslintConfig": {
-    "extends": "react-app"
+    "extends": "react-app",
+    "rules": {
+      "no-undef": "off",
+      "no-restricted-globals": "off",
+      "no-unused-vars": "off"
+    }
   },
   "browserslist": {
     "production": [
