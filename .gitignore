@@ -39,3 +39,4 @@ conf/app.conf
 *.pem
 conf/app.conf
 conf/app.conf
+conf/app.prod.conf
