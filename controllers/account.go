@@ -230,7 +230,7 @@ func (c *ApiController) Signup() {
 	c.ResponseOk(userId)
 }
 
-// CheckAccountExist
+// CheckUsersExist
 // @Tag Login API
 // @Title CheckAccountExist
 // @Description sign up a new user
@@ -240,8 +240,8 @@ func (c *ApiController) Signup() {
 // @Param   email     formData    string  true        "The email"
 // @Param   phone     formData    string  true        "The phone"
 // @Success 200 {object} controllers.Response The Response object
-// @router /check-account [post]
-func (c *ApiController) CheckAccountExist() {
+// @router /check-users-exist [post]
+func (c *ApiController) CheckUsersExist() {
 
 	var form RequestForm
 	err := json.Unmarshal(c.Ctx.Input.RequestBody, &form)
