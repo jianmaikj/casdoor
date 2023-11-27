@@ -10,6 +10,7 @@
     "@ctrl/tinycolor": "^3.5.0",
     "@emotion/react": "^11.10.5",
     "@metamask/eth-sig-util": "^6.0.0",
+    "@safe-global/safe-apps-provider": "^0.18.0",
     "@web3-onboard/coinbase": "^2.2.5",
     "@web3-onboard/core": "^2.20.5",
     "@web3-onboard/frontier": "^2.0.4",
@@ -91,6 +92,7 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
     "@testing-library/user-event": "^7.1.2",
+    "babel-plugin-dynamic-import-node": "^2.3.3",
     "cross-env": "^7.0.3",
     "cypress": "^12.5.1",
     "eslint": "8.22.0",
@@ -111,8 +113,5 @@
     ]
   },
   "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
   }
 }

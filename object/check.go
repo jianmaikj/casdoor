@@ -32,6 +32,51 @@ const (
 	LastSignWrongTimeDuration = time.Minute * 15
 )
 
+func CheckUserIfExist(application *Application, organization *Organization, username string, email string, lang string) string {
+	if organization == nil {
+		return "organization does not exist"
+	}
+
+	if application.IsSignupItemVisible("Username") {
+		if len(username) <= 1 {
+			return i18n.Translate(lang, "check:Username must have at least 2 characters")
+		}
+		if unicode.IsDigit(rune(username[0])) {
+			return i18n.Translate(lang, "check:Username cannot start with a digit")
+		}
+		if util.IsEmailValid(username) {
+			return i18n.Translate(lang, "check:Username cannot be an email address")
+		}
+		if util.ReWhiteSpace.MatchString(username) {
+			return i18n.Translate(lang, "check:Username cannot contain white spaces")
+		}
+
+		if msg := CheckUsername(username, lang); msg != "" {
+			return msg
+		}
+
+		if HasUserByField(organization.Name, "name", username) {
+			return i18n.Translate(lang, "check:Username already exists")
+		}
+
+	}
+	if application.IsSignupItemVisible("Email") {
+		if email == "" {
+			if application.IsSignupItemRequired("Email") {
+				return i18n.Translate(lang, "check:Email cannot be empty")
+			}
+		} else {
+			if HasUserByField(organization.Name, "email", email) {
+				return i18n.Translate(lang, "check:Email already exists")
+			} else if !util.IsEmailValid(email) {
+				return i18n.Translate(lang, "check:Email is invalid")
+			}
+		}
+	}
+
+	return ""
+}
+
 func CheckUserSignup(application *Application, organization *Organization, form *form.AuthForm, lang string) string {
 	if organization == nil {
 		return i18n.Translate(lang, "check:Organization does not exist")
@@ -303,6 +348,9 @@ func CheckUserPermission(requestUserId, userId string, strict bool, lang string)
 		return false, fmt.Errorf(i18n.Translate(lang, "general:Please login first"))
 	}
 
+	if strings.HasPrefix(requestUserId, "app/") {
+		return true, nil
+	}
 	userOwner := util.GetOwnerFromId(userId)
 
 	if userId != "" {
@@ -321,29 +369,24 @@ func CheckUserPermission(requestUserId, userId string, strict bool, lang string)
 
 		userOwner = targetUser.Owner
 	}
-
 	hasPermission := false
-	if strings.HasPrefix(requestUserId, "app/") {
-		hasPermission = true
-	} else {
-		requestUser, err := GetUser(requestUserId)
-		if err != nil {
-			return false, err
-		}
+	requestUser, err := GetUser(requestUserId)
+	if err != nil {
+		return false, err
+	}
 
-		if requestUser == nil {
-			return false, fmt.Errorf(i18n.Translate(lang, "check:Session outdated, please login again"))
-		}
-		if requestUser.IsGlobalAdmin() {
+	if requestUser == nil {
+		return false, fmt.Errorf(i18n.Translate(lang, "check:Session outdated, please login again"))
+	}
+	if requestUser.IsGlobalAdmin() {
+		hasPermission = true
+	} else if requestUserId == userId {
+		hasPermission = true
+	} else if userOwner == requestUser.Owner {
+		if strict {
+			hasPermission = requestUser.IsAdmin
+		} else {
 			hasPermission = true
-		} else if requestUserId == userId {
-			hasPermission = true
-		} else if userOwner == requestUser.Owner {
-			if strict {
-				hasPermission = requestUser.IsAdmin
-			} else {
-				hasPermission = true
-			}
 		}
 	}
 

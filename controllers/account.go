@@ -230,7 +230,7 @@ func (c *ApiController) Signup() {
 	c.ResponseOk(userId)
 }
 
-// CheckUsersExist
+// CheckAccountExist
 // @Tag Login API
 // @Title CheckAccountExist
 // @Description sign up a new user
@@ -240,23 +240,31 @@ func (c *ApiController) Signup() {
 // @Param   email     formData    string  true        "The email"
 // @Param   phone     formData    string  true        "The phone"
 // @Success 200 {object} controllers.Response The Response object
-// @router /check-users-exist [post]
-func (c *ApiController) CheckUsersExist() {
+// @router /check-account [post]
+func (c *ApiController) CheckAccountExist() {
 
-	var form RequestForm
-	err := json.Unmarshal(c.Ctx.Input.RequestBody, &form)
+	var authForm form.AuthForm
+	err := json.Unmarshal(c.Ctx.Input.RequestBody, &authForm)
 	if err != nil {
 		panic(err)
 	}
 
-	application := object.GetApplication(fmt.Sprintf("admin/%s", form.Application))
+	application, err := object.GetApplication(fmt.Sprintf("admin/%s", authForm.Application))
+	if err != nil {
+		c.ResponseError(c.T(err.Error()))
+		return
+	}
 	if !application.EnableSignUp {
-		c.ResponseError("The application does not allow to sign up new account")
+		c.ResponseError(c.T("account:The application does not allow to sign up new account"))
 		return
 	}
 
-	organization := object.GetOrganization(fmt.Sprintf("%s/%s", "admin", form.Organization))
-	msg := object.CheckUserIfExist(application, organization, form.Username, form.Email, form.Phone)
+	organization, err := object.GetOrganization(fmt.Sprintf("%s/%s", "admin", authForm.Organization))
+	if err != nil {
+		c.ResponseError(c.T(err.Error()))
+		return
+	}
+	msg := object.CheckUserIfExist(application, organization, authForm.Username, authForm.Email, c.GetAcceptLanguage())
 	if msg != "" {
 		c.ResponseError(msg)
 		return
@@ -264,7 +272,6 @@ func (c *ApiController) CheckUsersExist() {
 
 	c.ResponseOk("")
 }
-
 
 // Logout
 // @Title Logout
@@ -487,7 +494,7 @@ func (c *ApiController) GetUserinfo2() {
 func (c *ApiController) GetCaptcha() {
 	applicationId := c.Input().Get("applicationId")
 	isCurrentProvider := c.Input().Get("isCurrentProvider")
-
+	fmt.Println("applicationId:", applicationId)
 	captchaProvider, err := object.GetCaptchaProviderByApplication(applicationId, isCurrentProvider, c.GetAcceptLanguage())
 	if err != nil {
 		c.ResponseError(err.Error())

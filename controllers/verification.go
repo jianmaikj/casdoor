@@ -35,33 +35,33 @@ const (
 	MfaAuthVerification  = "mfaAuth"
 )
 
-// CheckCaptcha
-// @Title CheckCaptcha
-// @Tag Verification API
-// @router /check-captcha [post]
-func (c *ApiController) CheckCaptcha() {
-	checkType := c.Ctx.Request.Form.Get("checkType")
-	checkId := c.Ctx.Request.Form.Get("checkId")
-	checkKey := c.Ctx.Request.Form.Get("checkKey")
-
-	if len(checkType) == 0 || len(checkId) == 0 || len(checkKey) == 0 {
-		c.ResponseError("Missing parameter.")
-		return
-	}
-
-	isHuman := false
-	captchaProvider := object.GetDefaultHumanCheckProvider()
-	if captchaProvider == nil {
-		isHuman = object.VerifyCaptcha(checkId, checkKey)
-	}
-
-	if !isHuman {
-		c.ResponseError("Turing test failed.")
-		return
-	}
-	c.Data["json"] = Response{Status: "ok"}
-	c.ServeJSON()
-}
+//// CheckCaptcha
+//// @Title CheckCaptcha
+//// @Tag Verification API
+//// @router /check-captcha [post]
+//func (c *ApiController) CheckCaptcha() {
+//	checkType := c.Ctx.Request.Form.Get("checkType")
+//	checkId := c.Ctx.Request.Form.Get("checkId")
+//	checkKey := c.Ctx.Request.Form.Get("checkKey")
+//
+//	if len(checkType) == 0 || len(checkId) == 0 || len(checkKey) == 0 {
+//		c.ResponseError("Missing parameter.")
+//		return
+//	}
+//
+//	isHuman := false
+//	captchaProvider := object.GetDefaultHumanCheckProvider()
+//	if captchaProvider == nil {
+//		isHuman = object.VerifyCaptcha(checkId, checkKey)
+//	}
+//
+//	if !isHuman {
+//		c.ResponseError("Turing test failed.")
+//		return
+//	}
+//	c.Data["json"] = Response{Status: "ok"}
+//	c.ServeJSON()
+//}
 
 // SendVerificationCode ...
 // @Title SendVerificationCode
@@ -239,18 +239,15 @@ func (c *ApiController) VerifyCaptcha() {
 		c.ResponseError(err.Error())
 		return
 	}
-
 	if msg := vform.CheckParameter(form.VerifyCaptcha, c.GetAcceptLanguage()); msg != "" {
 		c.ResponseError(msg)
 		return
 	}
-
 	provider := captcha.GetCaptchaProvider(vform.CaptchaType)
 	if provider == nil {
 		c.ResponseError(c.T("verification:Invalid captcha provider."))
 		return
 	}
-
 	isValid, err := provider.VerifyCaptcha(vform.CaptchaToken, vform.ClientSecret)
 	if err != nil {
 		c.ResponseError(err.Error())
@@ -322,6 +319,106 @@ func (c *ApiController) ResetEmailOrPhone() {
 			c.ResponseError(errMsg)
 			return
 		}
+	}
+
+	if result := object.CheckVerificationCode(checkDest, code, c.GetAcceptLanguage()); result.Code != object.VerificationSuccess {
+		c.ResponseError(result.Msg)
+		return
+	}
+
+	switch destType {
+	case object.VerifyTypeEmail:
+		user.Email = dest
+		_, err = object.SetUserField(user, "email", user.Email)
+	case object.VerifyTypePhone:
+		user.Phone = dest
+		_, err = object.SetUserField(user, "phone", user.Phone)
+	default:
+		c.ResponseError(c.T("verification:Unknown type"))
+		return
+	}
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+
+	err = object.DisableVerificationCode(checkDest)
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+
+	c.ResponseOk()
+}
+
+// ResetEmailOrPhoneByApp ...
+// @Tag Account API
+// @Title ResetEmailOrPhoneByApp
+// @router /api/reset-email-or-phone-by-app [post]
+func (c *ApiController) ResetEmailOrPhoneByApp() {
+	user := &object.User{}
+	if strings.HasPrefix(c.GetSessionUsername(), "app/") {
+		user.Name = c.Ctx.Request.Form.Get("username")
+		user.Owner = c.Ctx.Request.Form.Get("owner")
+	} else {
+		c.ResponseError(c.T("verification:Invalid user."))
+		return
+	}
+
+	destType := c.Ctx.Request.Form.Get("type")
+	dest := c.Ctx.Request.Form.Get("dest")
+	code := c.Ctx.Request.Form.Get("code")
+
+	if util.IsStringsEmpty(destType, dest, code) {
+		c.ResponseError(c.T("general:Missing parameter"))
+		return
+	}
+
+	checkDest := dest
+	organization, err := object.GetOrganizationByUser(user)
+	fmt.Println("organization>>", organization, user, err)
+	if err != nil {
+		c.ResponseError(c.T(err.Error()))
+		return
+	}
+
+	if destType == object.VerifyTypePhone {
+		if object.HasUserByField(user.Owner, "phone", dest) {
+			c.ResponseError(c.T("check:Phone already exists"))
+			return
+		}
+
+		phoneItem := object.GetAccountItemByName("Phone", organization)
+		if phoneItem == nil {
+			c.ResponseError(c.T("verification:Unable to get the phone modify rule."))
+			return
+		}
+
+		if pass, errMsg := object.CheckAccountItemModifyRule(phoneItem, user.IsAdminUser(), c.GetAcceptLanguage()); !pass {
+			c.ResponseError(errMsg)
+			return
+		}
+		ok := false
+		if checkDest, ok = util.GetE164Number(dest, user.GetCountryCode("")); !ok {
+			c.ResponseError(fmt.Sprintf(c.T("verification:Phone number is invalid in your region %s"), user.CountryCode))
+			return
+		}
+	} else if destType == object.VerifyTypeEmail {
+		if object.HasUserByField(user.Owner, "email", dest) {
+			c.ResponseError(c.T("check:Email already exists"))
+			return
+		}
+
+		//emailItem := object.GetAccountItemByName("Email", organization)
+		//if emailItem == nil {
+		//	c.ResponseError(c.T("verification:Unable to get the email modify rule."))
+		//	return
+		//}
+		//
+		//if pass, errMsg := object.CheckAccountItemModifyRule(emailItem, user.IsAdminUser(), c.GetAcceptLanguage()); !pass {
+		//	c.ResponseError(errMsg)
+		//	return
+		//}
 	}
 
 	if result := object.CheckVerificationCode(checkDest, code, c.GetAcceptLanguage()); result.Code != object.VerificationSuccess {

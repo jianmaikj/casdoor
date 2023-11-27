@@ -30,14 +30,5 @@ commentsRouter*.go
 *.pem
 object/token_jwt_key.key
 object/token_jwt_key.pem
-*.key
-*.pem
-object/token_jwt_key.key
-object/token_jwt_key.pem
 conf/app.conf
-*.key
-*.pem
-conf/app.conf
-conf/app.conf
-conf/app.prod.conf
 conf/app.prod.conf
